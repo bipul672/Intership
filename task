@@ -1,0 +1,207 @@
+Assuming these tables:
+
+Employees (
+    EmployeeID INT,
+    EmployeeName VARCHAR(100),
+    DepartmentID INT,
+    Salary DECIMAL(10,2),
+    HireDate DATE
+);
+
+Departments (
+    DepartmentID INT,
+    DepartmentName VARCHAR(100)
+);
+
+1. Top 5 Highest Salary Employees
+
+SELECT TOP 5 EmployeeID, EmployeeName, Salary
+FROM Employees
+ORDER BY Salary DESC;
+
+2. Department-wise Employee Count
+
+SELECT DepartmentID, COUNT(*) AS EmployeeCount
+FROM Employees
+GROUP BY DepartmentID;
+
+3. Find Second Highest Salary
+
+SELECT MAX(Salary) AS SecondHighestSalary
+FROM Employees
+WHERE Salary < (SELECT MAX(Salary) FROM Employees);
+
+4. Employees Whose Salary is Greater Than Department Average
+
+SELECT e.EmployeeID,
+       e.EmployeeName,
+       e.DepartmentID,
+       e.Salary
+FROM Employees e
+WHERE e.Salary >
+(
+    SELECT AVG(Salary)
+    FROM Employees
+    WHERE DepartmentID = e.DepartmentID
+);
+
+5. INNER JOIN
+
+SELECT e.EmployeeID,
+       e.EmployeeName,
+       d.DepartmentName,
+       e.Salary
+FROM Employees e
+INNER JOIN Departments d
+ON e.DepartmentID = d.DepartmentID;
+
+6. LEFT JOIN
+
+SELECT e.EmployeeID,
+       e.EmployeeName,
+       d.DepartmentName
+FROM Employees e
+LEFT JOIN Departments d
+ON e.DepartmentID = d.DepartmentID;
+
+7. GROUP BY with HAVING
+
+SELECT DepartmentID,
+       COUNT(*) AS EmployeeCount
+FROM Employees
+GROUP BY DepartmentID
+HAVING COUNT(*) > 2;
+
+8. Employees Hired in Last 6 Months
+
+SELECT *
+FROM Employees
+WHERE HireDate >= DATEADD(MONTH, -6, GETDATE());
+
+9. Find Duplicate Records
+
+(Example: duplicate EmployeeName)
+
+SELECT EmployeeName,
+       COUNT(*) AS Total
+FROM Employees
+GROUP BY EmployeeName
+HAVING COUNT(*) > 1;
+
+10. Remove Duplicate Records
+
+(Keep the first record)
+
+WITH CTE AS
+(
+    SELECT *,
+           ROW_NUMBER() OVER
+           (
+               PARTITION BY EmployeeName
+               ORDER BY EmployeeID
+           ) AS RN
+    FROM Employees
+)
+DELETE FROM CTE
+WHERE RN > 1;
+
+
+Below are SQL solutions for the topics shown in your screenshot.
+
+1. Add some data in the existing table
+
+Assume the Employees table already exists.
+
+INSERT INTO Employees (EmployeeID, EmployeeName, DepartmentID, Salary, HireDate)
+VALUES
+(1, 'Rahul', 101, 50000, '2023-01-10'),
+(2, 'Priya', 102, 60000, '2022-05-15'),
+(3, 'Amit', 101, 55000, '2021-08-20'),
+(4, 'Neha', 103, 70000, '2020-11-12'),
+(5, 'Rohit', 102, 65000, '2024-02-18');
+
+
+---
+
+2. Window Functions
+
+Row Number
+
+SELECT EmployeeName,
+       Salary,
+       ROW_NUMBER() OVER (ORDER BY Salary DESC) AS RowNo
+FROM Employees;
+
+Rank
+
+SELECT EmployeeName,
+       Salary,
+       RANK() OVER (ORDER BY Salary DESC) AS RankNo
+FROM Employees;
+
+Dense Rank
+
+SELECT EmployeeName,
+       Salary,
+       DENSE_RANK() OVER (ORDER BY Salary DESC) AS DenseRank
+FROM Employees;
+
+
+---
+
+3. CASE WHEN
+
+SELECT EmployeeName,
+       Salary,
+       CASE
+           WHEN Salary >= 70000 THEN 'High'
+           WHEN Salary >= 50000 THEN 'Medium'
+           ELSE 'Low'
+       END AS SalaryCategory
+FROM Employees;
+
+
+---
+
+4. Views
+
+Create View
+
+CREATE VIEW Employee_View AS
+SELECT EmployeeID,
+       EmployeeName,
+       Salary
+FROM Employees;
+
+Use View
+
+SELECT * FROM Employee_View;
+
+
+---
+
+5. Triggers
+
+Create a log table
+
+CREATE TABLE EmployeeLog
+(
+    LogID INT IDENTITY(1,1),
+    EmployeeID INT,
+    ActionDate DATETIME
+);
+
+Create Trigger
+
+CREATE TRIGGER trg_AfterInsert
+ON Employees
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO EmployeeLog (EmployeeID, ActionDate)
+    SELECT EmployeeID, GETDATE()
+    FROM inserted;
+END;
+
+
+
